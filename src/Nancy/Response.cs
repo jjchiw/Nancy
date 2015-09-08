@@ -2,6 +2,7 @@ namespace Nancy
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace Nancy
     /// <summary>
     /// Encapsulates HTTP-response information from an Nancy operation.
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplay, nq}")]
     public class Response: IDisposable
     {
         /// <summary>
@@ -55,7 +57,7 @@ namespace Nancy
         /// <summary>
         /// Gets the collection of HTTP response headers that should be sent back to the client.
         /// </summary>
-        /// <value>An <see cref="IDictionary{TKey,TValue}"/> instance, contaning the key/value pair of headers.</value>
+        /// <value>An <see cref="IDictionary{TKey,TValue}"/> instance, containing the key/value pair of headers.</value>
         public IDictionary<string, string> Headers { get; set; }
 
         /// <summary>
@@ -211,9 +213,14 @@ namespace Nancy
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
-        /// <remarks>This method can be overriden in sub-classes to dispose of response specific resources.</remarks>
+        /// <remarks>This method can be overridden in sub-classes to dispose of response specific resources.</remarks>
         public virtual void Dispose()
         {
+        }
+
+        private string DebuggerDisplay
+        {
+            get { return string.Join(" ", new string[] { this.StatusCode.ToString(), this.ReasonPhrase, this.ContentType }.Where(x => !string.IsNullOrEmpty(x)).ToArray()); }
         }
     }
 }

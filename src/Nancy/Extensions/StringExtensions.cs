@@ -19,7 +19,7 @@ namespace Nancy.Extensions
         /// <value>A <see cref="Regex"/> object.</value>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static readonly Regex ParameterExpression =
-            new Regex(@"{(?<name>[A-Za-z0-9_]*)(?:\?(?<default>[A-Za-z0-9_]*))?}", RegexOptions.Compiled);
+            new Regex(@"{(?<name>[A-Za-z0-9_]*)(?:\?(?<default>[A-Za-z0-9_-]*))?}", RegexOptions.Compiled);
 
         /// <summary>
         /// Extracts information about the parameters in the <paramref name="segment"/>.
@@ -45,7 +45,7 @@ namespace Nancy.Extensions
         }
 
         /// <summary>
-        /// Checks if a segement contains any parameters.
+        /// Checks if a segment contains any parameters.
         /// </summary>
         /// <param name="segment">The segment to check for parameters.</param>
         /// <returns>true if the segment contains a parameter; otherwise false.</returns>

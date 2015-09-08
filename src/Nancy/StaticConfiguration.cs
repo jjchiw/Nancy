@@ -49,6 +49,12 @@ namespace Nancy
         public static bool CaseSensitive { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether or not to route HEAD requests explicitly.
+        /// </summary>
+        [Description("Enables explicit HEAD routing and disables the usage of GET routes for HEAD requests.")]
+        public static bool EnableHeadRouting { get; set; }
+
+        /// <summary>
         /// Gets a value indicating whether we are running in debug mode or not.
         /// Checks the entry assembly to see whether it has been built in debug mode.
         /// If anything goes wrong it returns false.
@@ -93,6 +99,11 @@ namespace Nancy
         /// </summary>
         [Description("Enable request tracing.")]
         public static bool EnableRequestTracing { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not to disable request stream switching
+        /// </summary>
+        public static bool? DisableRequestStreamSwitching { get; set; }
 
         public static class Caching
         {

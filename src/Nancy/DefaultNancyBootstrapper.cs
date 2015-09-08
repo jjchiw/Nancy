@@ -1,12 +1,10 @@
-﻿using Nancy.Diagnostics;
-
 namespace Nancy
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
-
+    using Nancy.Diagnostics;
     using Bootstrapper;
     using Nancy.TinyIoc;
 
@@ -21,27 +19,27 @@ namespace Nancy
         /// </summary>
         public static IEnumerable<Func<Assembly, bool>> DefaultAutoRegisterIgnoredAssemblies = new Func<Assembly, bool>[]
             {
-                asm => asm.FullName.StartsWith("Microsoft.", StringComparison.InvariantCulture),
-                asm => asm.FullName.StartsWith("System.", StringComparison.InvariantCulture),
-                asm => asm.FullName.StartsWith("System,", StringComparison.InvariantCulture),
-                asm => asm.FullName.StartsWith("CR_ExtUnitTest", StringComparison.InvariantCulture),
-                asm => asm.FullName.StartsWith("mscorlib,", StringComparison.InvariantCulture),
-                asm => asm.FullName.StartsWith("CR_VSTest", StringComparison.InvariantCulture),
-                asm => asm.FullName.StartsWith("DevExpress.CodeRush", StringComparison.InvariantCulture),
-                asm => asm.FullName.StartsWith("IronPython", StringComparison.InvariantCulture),
-                asm => asm.FullName.StartsWith("IronRuby", StringComparison.InvariantCulture),
-                asm => asm.FullName.StartsWith("xunit", StringComparison.InvariantCulture),
-                asm => asm.FullName.StartsWith("Nancy.Testing", StringComparison.InvariantCulture),
-                asm => asm.FullName.StartsWith("MonoDevelop.NUnit", StringComparison.InvariantCulture),
-                asm => asm.FullName.StartsWith("SMDiagnostics", StringComparison.InvariantCulture),
-                asm => asm.FullName.StartsWith("CppCodeProvider", StringComparison.InvariantCulture),
-                asm => asm.FullName.StartsWith("WebDev.WebHost40", StringComparison.InvariantCulture),
+                asm => asm.FullName.StartsWith("Microsoft.", StringComparison.Ordinal),
+                asm => asm.FullName.StartsWith("System.", StringComparison.Ordinal),
+                asm => asm.FullName.StartsWith("System,", StringComparison.Ordinal),
+                asm => asm.FullName.StartsWith("CR_ExtUnitTest", StringComparison.Ordinal),
+                asm => asm.FullName.StartsWith("mscorlib,", StringComparison.Ordinal),
+                asm => asm.FullName.StartsWith("CR_VSTest", StringComparison.Ordinal),
+                asm => asm.FullName.StartsWith("DevExpress.CodeRush", StringComparison.Ordinal),
+                asm => asm.FullName.StartsWith("IronPython", StringComparison.Ordinal),
+                asm => asm.FullName.StartsWith("IronRuby", StringComparison.Ordinal),
+                asm => asm.FullName.StartsWith("xunit", StringComparison.Ordinal),
+                asm => asm.FullName.StartsWith("Nancy.Testing", StringComparison.Ordinal),
+                asm => asm.FullName.StartsWith("MonoDevelop.NUnit", StringComparison.Ordinal),
+                asm => asm.FullName.StartsWith("SMDiagnostics", StringComparison.Ordinal),
+                asm => asm.FullName.StartsWith("CppCodeProvider", StringComparison.Ordinal),
+                asm => asm.FullName.StartsWith("WebDev.WebHost40", StringComparison.Ordinal),
             };
 
         /// <summary>
         /// Gets the assemblies to ignore when autoregistering the application container
-        /// Return true from the delegate to ignore that particular assembly, returning true
-        /// does not mean the assembly *will* be included, a false from another delegate will
+        /// Return true from the delegate to ignore that particular assembly, returning false
+        /// does not mean the assembly *will* be included, a true from another delegate will
         /// take precedence.
         /// </summary>
         protected virtual IEnumerable<Func<Assembly, bool>> AutoRegisterIgnoredAssemblies
@@ -119,10 +117,10 @@ namespace Nancy
         /// by IEnumerable{Type} constructor dependencies.
         /// </summary>
         /// <param name="container">Container to register into</param>
-        /// <param name="collectionTypeRegistrationsn">Collection type registrations to register</param>
-        protected override sealed void RegisterCollectionTypes(TinyIoCContainer container, IEnumerable<CollectionTypeRegistration> collectionTypeRegistrationsn)
+        /// <param name="collectionTypeRegistrations">Collection type registrations to register</param>
+        protected override sealed void RegisterCollectionTypes(TinyIoCContainer container, IEnumerable<CollectionTypeRegistration> collectionTypeRegistrations)
         {
-            foreach (var collectionTypeRegistration in collectionTypeRegistrationsn)
+            foreach (var collectionTypeRegistration in collectionTypeRegistrations)
             {
                 switch (collectionTypeRegistration.Lifetime)
                 {
@@ -176,8 +174,9 @@ namespace Nancy
         /// <summary>
         /// Creates a per request child/nested container
         /// </summary>
+        /// <param name="context">Current context</param>
         /// <returns>Request container instance</returns>
-        protected override sealed TinyIoCContainer CreateRequestContainer()
+        protected override TinyIoCContainer CreateRequestContainer(NancyContext context)
         {
             return this.ApplicationContainer.GetChildContainer();
         }
@@ -232,7 +231,7 @@ namespace Nancy
         }
 
         /// <summary>
-        /// Retreive a specific module instance from the container
+        /// Retrieve a specific module instance from the container
         /// </summary>
         /// <param name="container">Container to use</param>
         /// <param name="moduleType">Type of the module</param>

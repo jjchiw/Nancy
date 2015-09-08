@@ -309,7 +309,7 @@ namespace Nancy.Tests.Unit
             // Given
             StaticConfiguration.CaseSensitive = false;
             var memory =
-                new MemoryStream(BuildMultipartFormValues(new Dictionary<string, string>(StringComparer.InvariantCulture)
+                new MemoryStream(BuildMultipartFormValues(new Dictionary<string, string>(StringComparer.Ordinal)
                 {
                     { "key", "value" },
                     { "KEY", "VALUE" }
@@ -335,7 +335,7 @@ namespace Nancy.Tests.Unit
             // Given
             StaticConfiguration.CaseSensitive = true;
             var memory =
-                new MemoryStream(BuildMultipartFormValues(new Dictionary<string, string>(StringComparer.InvariantCulture)
+                new MemoryStream(BuildMultipartFormValues(new Dictionary<string, string>(StringComparer.Ordinal)
                 {
                     { "key", "value" },
                     { "KEY", "VALUE" }
@@ -628,6 +628,27 @@ namespace Nancy.Tests.Unit
 
             // Then
             request.Cookies[cookieName].ShouldEqual(cookieData);
+        }
+
+        [Fact]
+        public void Should_add_attribute_in_cookie_as_empty_value()
+        {
+          // Given, when
+          const string cookieName = "path";
+          const string cookieData = "/";
+          const string cookieAttribute = "SomeAttribute";
+          var headers = new Dictionary<string, IEnumerable<string>>();
+          var cookies = new List<string> { string.Format("{0}={1}; {2}", cookieName, cookieData, cookieAttribute) };
+          headers.Add("cookie", cookies);
+          var newUrl = new Url
+          {
+            Path = "/"
+          };
+          var request = new Request("GET", newUrl, null, headers);
+
+          // Then
+          request.Cookies[cookieName].ShouldEqual(cookieData);
+          request.Cookies[cookieAttribute].ShouldEqual(string.Empty);
         }
 
         [Fact]

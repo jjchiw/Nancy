@@ -32,7 +32,7 @@ namespace Nancy.Routing
         /// <param name="cancellationToken">Cancellation token</param>
         /// <param name="parameters">The parameters that the route should be invoked with.</param>
         /// <param name="context">The context of the route that is being invoked.</param>
-        /// <returns>A <see cref="Response"/> intance that represents the result of the invoked route.</returns>
+        /// <returns>A <see cref="Response"/> instance that represents the result of the invoked route.</returns>
         public Task<Response> Invoke(Route route, CancellationToken cancellationToken, DynamicDictionary parameters, NancyContext context)
         {
             var tcs = new TaskCompletionSource<Response>();
@@ -43,7 +43,7 @@ namespace Nancy.Routing
                 completedTask =>
                 {
                     var returnResult = completedTask.Result;
-                    if (returnResult == null)
+                    if (!(returnResult is ValueType) && returnResult == null)
                     {
                         context.WriteTraceLog(
                             sb => sb.AppendLine("[DefaultRouteInvoker] Invocation of route returned null"));

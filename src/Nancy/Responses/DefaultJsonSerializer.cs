@@ -44,7 +44,7 @@
 
         /// <summary>
         /// Set to true to use the ISO8601 format for datetimes in produced JSON.
-        /// Set to false to use the WCF \/Date()\/ format in the the produced JSON.
+        /// Set to false to use the WCF \/Date()\/ format in the produced JSON.
         /// True by default.
         /// </summary>
         public bool ISO8601DateFormat
@@ -91,11 +91,11 @@
 
             var contentMimeType = contentType.Split(';')[0];
 
-            return contentMimeType.Equals("application/json", StringComparison.InvariantCultureIgnoreCase) ||
-                   contentMimeType.StartsWith("application/json-", StringComparison.InvariantCultureIgnoreCase) ||
-                   contentMimeType.Equals("text/json", StringComparison.InvariantCultureIgnoreCase) ||
-                  (contentMimeType.StartsWith("application/vnd", StringComparison.InvariantCultureIgnoreCase) &&
-                   contentMimeType.EndsWith("+json", StringComparison.InvariantCultureIgnoreCase));
+            return contentMimeType.Equals("application/json", StringComparison.OrdinalIgnoreCase) ||
+                   contentMimeType.StartsWith("application/json-", StringComparison.OrdinalIgnoreCase) ||
+                   contentMimeType.Equals("text/json", StringComparison.OrdinalIgnoreCase) ||
+                  (contentMimeType.StartsWith("application/vnd", StringComparison.OrdinalIgnoreCase) &&
+                   contentMimeType.EndsWith("+json", StringComparison.OrdinalIgnoreCase));
         }
     }
 }

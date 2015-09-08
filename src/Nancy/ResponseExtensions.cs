@@ -17,7 +17,7 @@ namespace Nancy
         /// <param name="response">Response object</param>
         /// <param name="fileName">Filename for the download</param>
         /// <param name="contentType">Optional content type</param>
-        /// <returns>Mopdified Response object</returns>
+        /// <returns>Modified Response object</returns>
         public static Response AsAttachment(this Response response, string fileName = null, string contentType = null)
         {
             var actualFilename = fileName;
@@ -186,11 +186,11 @@ namespace Nancy
                                    .ToArray();
 
             var headerProperty = properties
-                                    .Where(p => string.Equals(p.Name, "Header", StringComparison.InvariantCultureIgnoreCase))
+                                    .Where(p => string.Equals(p.Name, "Header", StringComparison.OrdinalIgnoreCase))
                                     .FirstOrDefault();
 
             var valueProperty = properties
-                                    .Where(p => string.Equals(p.Name, "Value", StringComparison.InvariantCultureIgnoreCase))
+                                    .Where(p => string.Equals(p.Name, "Value", StringComparison.OrdinalIgnoreCase))
                                     .FirstOrDefault();
 
             if (headerProperty == null || valueProperty == null)

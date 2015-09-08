@@ -1,3 +1,5 @@
+using Nancy.Diagnostics;
+
 namespace Nancy.Conventions
 {
     using System;
@@ -52,7 +54,7 @@ namespace Nancy.Conventions
 
                 if (!pathWithoutFilename.StartsWith(requestedPath, StringComparison.OrdinalIgnoreCase))
                 {
-                    ctx.Trace.TraceLog.WriteLog(x => x.AppendLine(string.Concat("[StaticContentConventionBuilder] The requested resource '", path, "' does not match convention mapped to '", requestedPath, "'" )));
+                    (ctx.Trace.TraceLog ?? new NullLog()).WriteLog(x => x.AppendLine(string.Concat("[StaticContentConventionBuilder] The requested resource '", path, "' does not match convention mapped to '", requestedPath, "'" )));
                     return null;
                 }
 
@@ -72,7 +74,7 @@ namespace Nancy.Conventions
         }
 
         /// <summary>
-        /// Adds a directory-based convention for static convention.
+        /// Adds a file-based convention for static convention.
         /// </summary>
         /// <param name="requestedFile">The file that should be matched with the request.</param>
         /// <param name="contentFile">The file that should be served when the requested path is matched.</param>
