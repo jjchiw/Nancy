@@ -3,6 +3,7 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+
     using FakeItEasy;
 
     using Nancy.Bootstrapper;
@@ -134,7 +135,7 @@
                 this.objectSerializer,
                 fakeValidator);
             csrfStartup.Initialize(this.pipelines);
-            this.request.Cookies.Add(CsrfToken.DEFAULT_CSRF_KEY, HttpUtility.UrlEncode("Testing Token"));
+            this.request.Cookies.Add(CsrfToken.DEFAULT_CSRF_KEY, "Testing Token");
             var context = new NancyContext { Request = this.request, Response = this.response };
 
             this.pipelines.AfterRequest.Invoke(context, new CancellationToken());
@@ -181,7 +182,7 @@
             
             // When
             context.Request.Form[CsrfToken.DEFAULT_CSRF_KEY] = token;
-            context.Request.Cookies.Add(CsrfToken.DEFAULT_CSRF_KEY, HttpUtility.UrlEncode(token));
+            context.Request.Cookies.Add(CsrfToken.DEFAULT_CSRF_KEY, token);
 
             // Then
             module.ValidateCsrfToken();
@@ -197,7 +198,7 @@
             
             // When
             context.Request = RequestWithHeader(CsrfToken.DEFAULT_CSRF_KEY, token);
-            context.Request.Cookies.Add(CsrfToken.DEFAULT_CSRF_KEY, HttpUtility.UrlEncode(token));
+            context.Request.Cookies.Add(CsrfToken.DEFAULT_CSRF_KEY, token);
 
             // Then
             module.ValidateCsrfToken();

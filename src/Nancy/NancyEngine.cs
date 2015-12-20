@@ -6,8 +6,7 @@
     using System.Threading;
     using System.Threading.Tasks;
 
-    using Bootstrapper;
-
+    using Nancy.Bootstrapper;
     using Cookies;
     using Diagnostics;
     using ErrorHandling;
@@ -30,6 +29,7 @@
         private readonly IEnumerable<IStatusCodeHandler> statusCodeHandlers;
         private readonly IStaticContentProvider staticContentProvider;
         private readonly IResponseNegotiator negotiator;
+        private readonly CancellationTokenSource engineDisposedCts;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NancyEngine"/> class.
@@ -83,6 +83,7 @@
             this.requestTracing = requestTracing;
             this.staticContentProvider = staticContentProvider;
             this.negotiator = negotiator;
+            this.engineDisposedCts = new CancellationTokenSource();
         }
 
         /// <summary>
@@ -91,58 +92,58 @@
         /// <value>An <see cref="IPipelines"/> instance.</value>
         public Func<NancyContext, IPipelines> RequestPipelinesFactory { get; set; }
 
-        public Task<NancyContext> HandleRequest(Request request, Func<NancyContext, NancyContext> preRequest, CancellationToken cancellationToken)
+        /// <summary>
+        /// Handles an incoming <see cref="Request"/> async.
+        /// </summary>
+        /// <param name="request">An <see cref="Request"/> instance, containing the information about the current request.</param>
+        /// <param name="preRequest">Delegate to call before the request is processed</param>
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        public async Task<NancyContext> HandleRequest(Request request, Func<NancyContext, NancyContext> preRequest, CancellationToken cancellationToken)
         {
-            var tcs = new TaskCompletionSource<NancyContext>();
-
-            if (request == null)
+            using (var cts = CancellationTokenSource.CreateLinkedTokenSource(this.engineDisposedCts.Token, cancellationToken))
             {
-                throw new ArgumentNullException("request", "The request parameter cannot be null.");
-            }
+                cts.Token.ThrowIfCancellationRequested();
 
-            var context = this.contextFactory.Create(request);
-
-            if (preRequest != null)
-            {
-                context = preRequest(context);
-            }
-
-            var staticContentResponse = this.staticContentProvider.GetContent(context);
-            if (staticContentResponse != null)
-            {
-                context.Response = staticContentResponse;
-                tcs.SetResult(context);
-                return tcs.Task;
-            }
-
-            var pipelines = this.RequestPipelinesFactory.Invoke(context);
-
-            var lifeCycleTask = this.InvokeRequestLifeCycle(context, cancellationToken, pipelines);
-
-            lifeCycleTask.WhenCompleted(
-                completeTask =>
+                if (request == null)
                 {
-                    try
-                    {
-                        this.CheckStatusCodeHandler(completeTask.Result);
+                    throw new ArgumentNullException("request", "The request parameter cannot be null.");
+                }
 
-                        this.SaveTraceInformation(completeTask.Result);
-                    }
-                    catch (Exception ex)
-                    {
-                        tcs.SetException(ex);
-                        return;
-                    }
+                var context = this.contextFactory.Create(request);
 
-                    tcs.SetResult(completeTask.Result);
-                },
-                errorTask =>
+                if (preRequest != null)
                 {
-                    tcs.SetException(errorTask.Exception);
-                },
-                true);
+                    context = preRequest(context);
+                }
 
-            return tcs.Task;
+                var staticContentResponse = this.staticContentProvider.GetContent(context);
+                if (staticContentResponse != null)
+                {
+                    context.Response = staticContentResponse;
+
+                    return context;
+                }
+
+                var pipelines = this.RequestPipelinesFactory.Invoke(context);
+
+                var nancyContext = await this.InvokeRequestLifeCycle(context, cts.Token, pipelines)
+                    .ConfigureAwait(false);
+
+                this.CheckStatusCodeHandler(nancyContext);
+
+                this.SaveTraceInformation(nancyContext);
+
+                return nancyContext;
+            }
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public virtual void Dispose()
+        {
+            this.engineDisposedCts.Cancel();
         }
 
         private void SaveTraceInformation(NancyContext ctx)
@@ -231,76 +232,35 @@
             handler.Handle(context.Response.StatusCode, context);
         }
 
-        private Task<NancyContext> InvokeRequestLifeCycle(NancyContext context, CancellationToken cancellationToken, IPipelines pipelines)
+        private async Task<NancyContext> InvokeRequestLifeCycle(NancyContext context, CancellationToken cancellationToken, IPipelines pipelines)
         {
-            var tcs = new TaskCompletionSource<NancyContext>();
-
-            var preHookTask = InvokePreRequestHook(context, cancellationToken, pipelines.BeforeRequest);
-
-            preHookTask.WhenCompleted(t =>
-                {
-                    var dispatchTask = t.Result != null ? TaskHelpers.GetCompletedTask(t.Result) : this.dispatcher.Dispatch(context, cancellationToken);
-
-                    dispatchTask.WhenCompleted(
-                        completedTask =>
-                        {
-                            context.Response = completedTask.Result;
-
-                            var postHookTask = this.InvokePostRequestHook(context, cancellationToken, pipelines.AfterRequest);
-
-                            postHookTask.WhenCompleted(this.PreExecute(context, pipelines, tcs), this.HandleFaultedTask(context, pipelines, tcs));
-                        },
-                        this.HandleFaultedTask(context, pipelines, tcs));
-                },
-                this.HandleFaultedTask(context, pipelines, tcs));
-
-            return tcs.Task;
-        }
-
-        private Action<Task> PreExecute(NancyContext context, IPipelines pipelines, TaskCompletionSource<NancyContext> tcs)
-        {
-            return postHookTask =>
+            try
             {
-                var preExecuteTask = context.Response.PreExecute(context);
+                var response = await InvokePreRequestHook(context, cancellationToken, pipelines.BeforeRequest).ConfigureAwait(false) ??
+                               await this.dispatcher.Dispatch(context, cancellationToken).ConfigureAwait(false);
 
-                preExecuteTask.WhenCompleted(
-                    completedPostHookTask => tcs.SetResult(context),
-                    this.HandleFaultedTask(context, pipelines, tcs));
-            };
-        }
+                context.Response = response;
 
-        private Action<Task> HandleFaultedTask(NancyContext context, IPipelines pipelines, TaskCompletionSource<NancyContext> tcs)
-        {
-            return t =>
-                {
-                    try
-                    {
-                        var flattenedException = t.Exception.FlattenInnerExceptions();
+                await this.InvokePostRequestHook(context, cancellationToken, pipelines.AfterRequest).ConfigureAwait(false);
 
-                        this.InvokeOnErrorHook(context, pipelines.OnError, flattenedException);
+                await response.PreExecute(context).ConfigureAwait(false);
+            }
+            catch(Exception ex)
+            {
+                this.InvokeOnErrorHook(context, pipelines.OnError, ex);
+            }
 
-                        tcs.SetResult(context);
-                    }
-                    catch (Exception e)
-                    {
-                        tcs.SetException(e);
-                    }
-                };
+            return context;
         }
 
         private static Task<Response> InvokePreRequestHook(NancyContext context, CancellationToken cancellationToken, BeforePipeline pipeline)
         {
-            if (pipeline == null)
-            {
-                return TaskHelpers.GetCompletedTask<Response>(null);
-            }
-
-            return pipeline.Invoke(context, cancellationToken);
+            return pipeline == null ? Task.FromResult<Response>(null) : pipeline.Invoke(context, cancellationToken);
         }
 
         private Task InvokePostRequestHook(NancyContext context, CancellationToken cancellationToken, AfterPipeline pipeline)
         {
-            return pipeline == null ? TaskHelpers.GetCompletedTask() : pipeline.Invoke(context, cancellationToken);
+            return pipeline == null ? TaskHelpers.CompletedTask : pipeline.Invoke(context, cancellationToken);
         }
 
         private void InvokeOnErrorHook(NancyContext context, ErrorPipeline pipeline, Exception ex)

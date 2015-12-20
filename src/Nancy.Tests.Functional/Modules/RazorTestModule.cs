@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace Nancy.Tests.Functional.Modules
+﻿namespace Nancy.Tests.Functional.Modules
 {
     public class RazorTestModule : NancyModule
     {
@@ -23,6 +18,13 @@ namespace Nancy.Tests.Functional.Modules
                 var serialized = this.ViewBag.ToDictionary();
 
                 return serialized;
+            };
+
+            Get["/razor-partialnotfound"] = _ =>
+            {
+                this.ViewBag.Name = "Bob";
+
+                return View["RazorPageWithUnknownPartial"];
             };
         }
     }

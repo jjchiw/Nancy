@@ -6,11 +6,11 @@ namespace Nancy
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
-    using System.Text.RegularExpressions;
     using System.Security.Cryptography.X509Certificates;
-
+    using System.Text.RegularExpressions;
+    using Extensions;
+    using Helpers;
     using IO;
-    using Nancy.Extensions;
     using Session;
 
     /// <summary>
@@ -192,7 +192,7 @@ namespace Nancy
                 }
                 else
                 {
-                    cookieValue = parts[1];
+                    cookieValue = HttpUtility.UrlDecode(parts[1]);
                 }
 
                 cookieDictionary[cookieName] = cookieValue;
@@ -298,14 +298,15 @@ namespace Nancy
                 };
 
             var providedOverride =
-                overrides.Where(x => !string.IsNullOrEmpty(x.Item2));
+                overrides.Where(x => !string.IsNullOrEmpty(x.Item2))
+                         .ToList();
 
             if (!providedOverride.Any())
             {
                 return;
             }
 
-            if (providedOverride.Count() > 1)
+            if (providedOverride.Count > 1)
             {
                 var overrideSources =
                     string.Join(", ", providedOverride);

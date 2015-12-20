@@ -3,6 +3,7 @@
     using System;
     using System.IO;
     using System.Threading.Tasks;
+
     using Nancy.Extensions;
 
     /// <summary>
@@ -78,33 +79,19 @@
 
                 if (task.IsFaulted)
                 {
-                   throw new InvalidOperationException("Unable to copy stream", task.Exception);
+                    throw new InvalidOperationException("Unable to copy stream", task.Exception);
                 }
             }
 
             this.stream.Position = 0;
         }
 
-        private Task<object> MoveToWritableStream()
+        private Task MoveToWritableStream()
         {
-            var tcs = new TaskCompletionSource<object>();
-
             var sourceStream = this.stream;
             this.stream = new MemoryStream(StreamExtensions.BufferSize);
 
-            sourceStream.CopyTo(this, (source, destination, ex) =>
-            {
-                if (ex != null)
-                {
-                    tcs.SetException(ex);
-                }
-                else
-                {
-                    tcs.SetResult(null);
-                }
-            });
-
-            return tcs.Task;
+            return sourceStream.CopyToAsync(this);
         }
 
         /// <summary>
@@ -357,9 +344,21 @@
 
         private static FileStream CreateTemporaryFileStream()
         {
-            var filePath = Path.GetTempFileName();
+            // we could use Path.GetTempFilePath() but this is problematic on Windows and more so on Mono
+            // symptoms will show when this method has been called > 65k times
+            // see docs: https://msdn.microsoft.com/en-us/library/system.io.path.gettempfilename(v=vs.110).aspx
+            // comments on Win32 implementation: https://msdn.microsoft.com/en-us/library/windows/desktop/aa364991(v=vs.85).aspx
+            // mono implementation: https://github.com/mono/mono/blob/master/mcs/class/corlib/System.IO/Path.cs#L490
 
-            return new FileStream(filePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 8192, true);
+            var filePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".tmp");
+
+            return new FileStream(
+                filePath,
+                FileMode.Create,
+                FileAccess.ReadWrite,
+                FileShare.None,
+                8192,
+                StaticConfiguration.AllowFileStreamUploadAsync);         
         }
 
         private Stream CreateDefaultMemoryStream(long expectedLength)

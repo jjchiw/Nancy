@@ -8,6 +8,7 @@ namespace Nancy.Tests.Unit.Bootstrapper.Base
 
     using Nancy.Bootstrapper;
     using Nancy.Routing;
+
     using Xunit;
 
     /// <summary>
@@ -171,6 +172,9 @@ namespace Nancy.Tests.Unit.Bootstrapper.Base
                 this.routeCache = routeCache;
                 this.contextFactory = contextFactory;
             }
+
+            public void Dispose()
+            {}
         }
     }
 

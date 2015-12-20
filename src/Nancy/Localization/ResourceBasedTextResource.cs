@@ -4,7 +4,6 @@ namespace Nancy.Localization
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Reflection;
     using System.Resources;
 
     /// <summary>
@@ -65,7 +64,7 @@ namespace Nancy.Localization
 
                 var candidates =
                     this.resourceManagers.Where(
-                        x => x.Key.EndsWith(components.Item1, StringComparison.OrdinalIgnoreCase)).ToArray();
+                        x => x.Key.EndsWith("." + components.Item1, StringComparison.OrdinalIgnoreCase)).ToArray();
 
                 if (candidates.Count() > 1)
                 {
